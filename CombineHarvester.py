@@ -7,7 +7,7 @@ from sklearn.preprocessing import StandardScaler
 
 class Harvest():
 
-	def __init__(self, chain, n_models=10, n_components=None, weights=None, n_reweight_samples=10000, n_samples =10000):
+	def __init__(self, chain, n_models=10, n_components=None, weights=None, n_reweight_samples=10000, n_samples =10000, scaler=None):
 
 		self.chain = chain
 		self.n_models = n_models
@@ -15,6 +15,7 @@ class Harvest():
 		self.weights = weights
 		self.n_reweight_samples = n_reweight_samples
 		self.n_samples = n_samples
+		self.scaler = scaler
 
 	def _resample_chain(self):
 		self.resampled_chain = self.chain
@@ -25,8 +26,10 @@ class Harvest():
 			self.resampled_chain = self.chain[sampled_indices]
 	
 	def _normalize_chain(self):
-		self.scaler = StandardScaler()
-		self.resampled_chain = self.scaler.fit_transform(self.resampled_chain)
+		if self.scaler == None:
+			print('CAUTION: You Will Want to Pass a Shared Data Scaler When Combining Chains!!!')
+			self.scaler = StandardScaler()
+			self.resampled_chain = self.scaler.fit_transform(self.resampled_chain)
 
 	def _denormalize_chain(self):
 		self.resampled_chain = self.scaler.inverse_transform(self.resampled_chain)
