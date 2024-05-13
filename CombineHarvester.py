@@ -59,14 +59,7 @@ class Harvest():
         self.flow_list = [None] * self.n_flows
 
         # Get available GPUs and CPUs
-        gpus = [device for device in jax.devices() if device.device_kind == 'gpu']
-        cpus = [device for device in jax.devices() if device.device_kind == 'cpu']
-        
-        # Prefer GPUs, fall back to CPUs if no GPUs are available
-        if gpus:
-            devices = gpus
-        else:
-            devices = cpus
+        devices = [device for device in jax.devices()]
 
         # Total number of iterations
         total_iterations = self.n_flows
