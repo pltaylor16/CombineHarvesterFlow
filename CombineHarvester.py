@@ -2,15 +2,16 @@
 import numpy as np 
 import threading
 import random
+import scipy.stats as stats
 import jax
 import jax.numpy as jnp
 import jax.random as jr
-from jax import device_put, pmap
+from jax import device_put, pmap, vmap
 from flowjax.bijections import RationalQuadraticSpline
 from flowjax.distributions import Normal
 from flowjax.flows import masked_autoregressive_flow
-from flowjax.train import fit_to_data
 import equinox as eqx
+from utils import fit_to_data_weight, WeightedMaximumLikelihoodLoss
 
 
 
@@ -44,7 +45,8 @@ class Harvest():
             )
 
             key, subkey = jax.random.split(key)
-            flow, losses = fit_to_data(subkey, flow, x, learning_rate=1e-3)
+            flow, losses = fit_to_data_weight(weights=self.weights, key=subkey, dist=flow, x=x, 
+                learning_rate=1e-3, loss_fn=WeightedMaximumLikelihoodLoss())
 
             #add the model to the list
             self.flow_list[i] = flow
@@ -122,8 +124,6 @@ class Harvest():
             self.flow_list += [eqx.tree_deserialise_leaves(self.harvest_path + "_flow_%s.eqx" %i, model)]
         return 0.
 
-    def check_convergence(self):
-        pass
 
 
 
@@ -159,8 +159,8 @@ class Combine():
         ln_weights_1 = np.sum(np.vstack(flow_weight_list_1), axis = 0) / self.harvest_2.n_flows
 
         #convert from log-likelihood to likelihood and update weights. Normalize mx(ln(weights)) to 0 to avoid overflow.
-        #ln_weights_1 -= np.max(ln_weights_1)
-        #ln_weights_2 -= np.max(ln_weights_2)
+        ln_weights_1 -= np.max(ln_weights_1)
+        ln_weights_2 -= np.max(ln_weights_2)
 
         chain_1_weights = self.harvest_1.weights * np.exp(ln_weights_1)
         chain_2_weights = self.harvest_2.weights * np.exp(ln_weights_2)
