@@ -14,7 +14,7 @@ import threading
 
 class Harvest():
 
-    def __init__(self, harvest_name, chain=None, n_flows=None, weights=None, random_seed=42):
+    def __init__(self, harvest_name, chain, n_flows, weights=None, random_seed=42):
         self.harvest_name= harvest_name
         self.chain = chain
         self.n_flows = n_flows
@@ -98,6 +98,7 @@ class Harvest():
         np.save(self.harvest_name + '_std.npy', self.std)
         np.save(self.harvest_name + '_weights.npy', self.weights)
         np.save(self.harvest_name + '_norm_chain.npy', self.norm_chain)
+        np.save(self.harvest_name + '_chain.npy', self.chain)
         for _ in len(self.flow_list):
             eqx.tree_serialise_leaves(self.harvest_name + f'_flow_{_}.eqx', flow_list[_])
         return 0. 
@@ -107,8 +108,19 @@ class Harvest():
         self.std = np.load(self.harvest_name + '_std.npy')
         self.weights = np.load(self.harvest_name + '_weights.npy')
         self.norm_chain = np.load(self.harvest_name + '_norm_chain.npy')
-        #still need to load the flows
+        self.chain = np.load(self.harvest_name + '_chain.npy')
+        self.flow_list = []
+        for i in range(n_flows):
+            key, subkey = jr.split(jr.PRNGKey(i))
+            model = masked_autoregressive_flow(
+            subkey,
+            base_dist=Normal(jnp.zeros(5)),
+            transformer=RationalQuadraticSpline(knots=8, interval=4))
+            self.flow_list += [eqx.tree_deserialise_leaves("_%s.eqx" %i, model)]
         return 0.
+
+    def check_convergence(self)
+        pass
 
 
 
@@ -118,7 +130,45 @@ class Combine():
         self.harvest_1 = harvest_1
         self.harvest_2 = harvest_2
 
+    def __getattr__(self, name):
+        if hasattr(self.harvest_1, name) and callable(getattr(self.harvest_1, name)):
+            return getattr(self.harvest_1, name)
+        elif hasattr(self.harvest_2, name) and callable(getattr(self.harvest_2, name)):
+            return getattr(self.harvest_2, name)
+        else:
+            raise AttributeError(f"'Combine' object has no attribute '{name}'")
+
+    def load_models(self):
+        self.harvest_1.load_models()
+        self.harvest_2.load_models()
+        return 0.
+
+
     def combine(self):
+
+        #normalize the chains
+        norm_chain_1 = (self.harvest_1.chain - self.harvest_2.mean) / self.harvest_2.std
+        norm_chain_2 = (self.harvest_2.chain - self.harvest_1.mean) / self.harvest_1.std
+
+        # get the weights
+        flow_weight_list_2, flow_weight_list_1 = [], []
+        for i in range(self.harvest_1.n_flows):
+            flow_weight_list_2 += [np.asarray(self.harvest_1.flow_list[i].log_prob(norm_chain_2))]
+        for i in range(self.harvest_2.n_flows):
+            flow_weight_list_1 += [np.asarray(self.harvest_2.flow_list[i].log_prob(norm_chain_1))]
+
+        ln_weights_1 = np.sum(np.vstack(flow_weight_list_2), axis = 0) / self.harvest_1.n_flows
+        ln_weights_2 = np.sum(np.vstack(flow_weight_list_1), axis = 0) / self.harvest_2.n_flows
+
+        #convert from log-likelihood to likelihood and update weights. Normalize mx(ln(weights)) to 0 to avoid overflow
+        ln_weights_1 -= np.max(ln_weights_1)
+        ln_weights_2 -= np.max(ln_weights_2)
+
+        # update the weights
+        chain_1_weights = self.harvest_1.weights * np.exp(ln_weights_1)
+        chain_2_weights = self.harvest_1.weights * np.exp(ln_weights_2)
+
+        return chain_1_weights, chain_2_weights
 
  
 
