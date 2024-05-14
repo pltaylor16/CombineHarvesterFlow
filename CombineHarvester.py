@@ -93,6 +93,7 @@ class Harvest():
         # Manually assign computation to a device
         x = jax.device_put(self.norm_chain[i], device)
         key = jax.random.PRNGKey(self.random_seed + i)
+        key, subkey = jax.random.split(key)
         flow = masked_autoregressive_flow(
             subkey,
             base_dist=Normal(jnp.zeros(x.shape[1])),
