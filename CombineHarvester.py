@@ -161,25 +161,17 @@ class Combine():
         return chain_1_weights, chain_2_weights
 
 
-    def convergence(self):
 
-        if self.harvest_1.n_flows != self.harvest_2.n_flows:
-            print ('Error: harvest_1 and harvest_2 must have same number of flows to test convergence')
-        else:
-            n_flows = self.harvest_1.n_flows
-            sigma_1 = np.zeros((np.shape(self.harvest_1.chain[0,:])[0],n_flows))
-            mu_1 = np.zeros((np.shape(self.harvest_1.chain[0,:])[0],n_flows))
-            sigma_2, mu_2 = sigma_1.copy(), mu_1.copy()
-            for i in range(n_flows):
-                self.harvest_1.n_flows = i + 1
-                self.harvest_2.n_flows = i + 1
-                chain_1_weights, chain_2_weights = self.combine()
-                mu_1[:,i] = np.average(self.harvest_1.chain, weights = chain_1_weights, axis = 0)
-                sigma_1[:,i] = (np.average((self.harvest_1.chain - mu_1[:,i]) ** 2., weights = chain_1_weights, axis = 0)) ** 0.5
-                mu_2[:,i] = np.average(self.harvest_2.chain, weights = chain_2_weights, axis = 0)
-                sigma_2[:,i] = (np.average((self.harvest_2.chain - mu_2[:,i]) ** 2., weights = chain_2_weights, axis = 0)) ** 0.5
-
-        return mu_1, mu_2, sigma_1, sigma_2
+    def combine_subset(self, n_flows_1, n_flows_2):
+        old_n_flows_1, old_n_flows_2 = self.harvest_1.n_flows, self.harvest_2.n_flows
+        self.harvest_1.n_flows = n_flows_1 
+        self.harvest_2.n_flows = n_flows_2 
+        chain_1_weights, chain_2_weights = self.combine()
+        #reset
+        self.harvest_1.n_flows = old_n_flows_1
+        self.harvest_2.n_flows = old_n_flows_2
+        return chain_1_weights, chain_2_weights
+    
 
 
 
