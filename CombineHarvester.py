@@ -102,10 +102,9 @@ class Harvest():
         n_per_thread = self.n_flows / len(devices)
 
         threads = []
-        for d in enumerate(devices):
-            device = devices[d]
-            start = d[0] * n_per_thread
-            end =  (d[0]+1) * n_per_thread
+        for d, device in enumerate(devices):
+            start = d * n_per_thread
+            end =  (d+1) * n_per_thread
             thread = threading.Thread(target=self._process_on_device, args=(start, end, device))
             threads.append(thread)
             thread.start()
