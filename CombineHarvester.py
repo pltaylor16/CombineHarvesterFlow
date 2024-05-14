@@ -89,36 +89,36 @@ class Harvest():
     '''
 
 
-def _device_specific_computation(i, device):
-    # Manually assign computation to a device
-    with jax.devices(device):
-        x = jax.device_put(self.norm_chain[i], device)
-        key = jax.random.PRNGKey(self.random_seed + i)
-        flow, loss = train_single_model(key, x, self.weights)
-        self.flow_list[i] = flow
+    def _device_specific_computation(i, device):
+        # Manually assign computation to a device
+        with jax.devices(device):
+            x = jax.device_put(self.norm_chain[i], device)
+            key = jax.random.PRNGKey(self.random_seed + i)
+            flow, loss = train_single_model(key, x, self.weights)
+            self.flow_list[i] = flow
 
-def _train_models(self):
-    devices = jax.devices()
-    total_iterations = self.n_flows
-    num_devices = len(devices)
-    iterations_per_device = total_iterations // num_devices
-    remainder = total_iterations % num_devices
+    def _train_models(self):
+        devices = jax.devices()
+        total_iterations = self.n_flows
+        num_devices = len(devices)
+        iterations_per_device = total_iterations // num_devices
+        remainder = total_iterations % num_devices
 
-    threads = []
-    start = 0
-    for i, device in enumerate(devices):
-        end = start + iterations_per_device + (1 if i < remainder else 0)
-        thread = threading.Thread(target=lambda: [
-            _device_specific_computation(j, device) for j in range(start, end)
-        ])
-        threads.append(thread)
-        thread.start()
-        start = end
+        threads = []
+        start = 0
+        for i, device in enumerate(devices):
+            end = start + iterations_per_device + (1 if i < remainder else 0)
+            thread = threading.Thread(target=lambda: [
+                _device_specific_computation(j, device) for j in range(start, end)
+            ])
+            threads.append(thread)
+            thread.start()
+            start = end
 
-    for thread in threads:
-        thread.join()
+        for thread in threads:
+            thread.join()
 
-    return 0
+        return 0
 
     def harvest(self):
         self._normalize_data()
