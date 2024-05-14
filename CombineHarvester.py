@@ -33,7 +33,7 @@ class Harvest():
         self.norm_chain = (self.chain - self.mean) / self.std
         return 0.
 
-    '''
+
     def _process_on_device(self, start, end, device):
         def _device_specific_computation(i):
             x = device_put(self.norm_chain, device)
@@ -86,47 +86,7 @@ class Harvest():
             thread.join()
 
         return 0.
-    '''
 
-
-    def _device_specific_computation(self, i, device):
-        # Manually assign computation to a device
-        x = jax.device_put(self.norm_chain[i], device)
-        key = jax.random.PRNGKey(self.random_seed + i)
-        key, subkey = jax.random.split(key)
-        flow = masked_autoregressive_flow(
-            subkey,
-            base_dist=Normal(jnp.zeros(x.shape[1])),
-            transformer=RationalQuadraticSpline(knots=8, interval=4),
-        )
-
-        key, subkey = jax.random.split(key)
-        flow, losses = fit_to_data_weight(weights=self.weights, key=subkey, dist=flow, x=x, 
-            learning_rate=1e-3, loss_fn=WeightedMaximumLikelihoodLoss())
-        self.flow_list[i] = flow
-
-    def _train_models(self):
-        devices = jax.devices()
-        total_iterations = self.n_flows
-        num_devices = len(devices)
-        iterations_per_device = total_iterations // num_devices
-        remainder = total_iterations % num_devices
-
-        threads = []
-        start = 0
-        for i, device in enumerate(devices):
-            end = start + iterations_per_device + (1 if i < remainder else 0)
-            thread = threading.Thread(target=lambda: [
-                self._device_specific_computation(j, device) for j in range(start, end)
-            ])
-            threads.append(thread)
-            thread.start()
-            start = end
-
-        for thread in threads:
-            thread.join()
-
-        return 0
 
     def harvest(self):
         self._normalize_data()
