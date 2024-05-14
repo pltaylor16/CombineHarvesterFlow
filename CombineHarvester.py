@@ -33,7 +33,7 @@ class Harvest():
         self.norm_chain = (self.chain - self.mean) / self.std
         return 0.
 
-    '''
+
     def _process_on_device(self, start, end, device):
         def _device_specific_computation(i):
             x = device_put(self.norm_chain, device)
@@ -56,6 +56,7 @@ class Harvest():
         for i in range(start, end):
             _device_specific_computation(i)
 
+    '''
     def _train_models(self):
         self.flow_list = [None] * self.n_flows
 
@@ -88,39 +89,34 @@ class Harvest():
         return 0.
     '''
 
-
-    def _train_model(key, weights, x):
-        subkey, key = random.split(key)
-        flow = masked_autoregressive_flow(
-            subkey,
-            base_dist=Normal(jnp.zeros(x.shape[1])),
-            transformer=RationalQuadraticSpline(knots=8, interval=4),
-        )
-
-        subkey, key = random.split(key)
-        flow, losses = fit_to_data_weight(weights=weights, key=subkey, dist=flow, x=x, learning_rate=1e-3, loss_fn=WeightedMaximumLikelihoodLoss())
-        return flow
-
-    # Modify your training function to use pmap
     def _train_models(self):
-        num_devices = len(jax.devices())
         self.flow_list = [None] * self.n_flows
-        keys = random.split(jax.random.PRNGKey(self.random_seed), num=self.n_flows)
+
+        # Get available GPUs and CPUs
+        devices = jax.devices()
+
+        # Total number of iterations
+        total_iterations = self.n_flows
+
+        # maybe some issues if devices does not exactly divide n_flows
+        n_per_thread = self.n_flows / len(devices)
+
+        threads = []
+        for d in enumerate(devices):
+            device = devices[d]
+            start = d * n_per_thread
+            end =  (d+1) * n_per_thread
+            thread = threading.Thread(target=self._process_on_device, args=(start, end, device))
+            threads.append(thread)
+            thread.start()
         
-        # Assuming 'x' and 'weights' need to be appropriately sized for pmap
-        # For example, x could be a batch of data, here we just simulate it
-        x = jax.random.normal(keys[0], (self.n_flows, 10))  # Example data shape
-        weights = jnp.ones((self.n_flows,))  # Example weights
-        
-        # Use pmap across the batch axis (0 axis)
-        parallel_train = pmap(train_model, in_axes=(0, None, 0))  # None for weights since they are the same for each call
-        
-        # Execute the parallel training
-        flows = parallel_train(keys, weights, x)
-        
-        # Store results
-        self.flow_list = list(flows)
-        return 0
+
+        # Join threads
+        for thread in threads:
+            thread.join()
+
+        return 0.
+
 
 
 
