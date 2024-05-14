@@ -104,8 +104,8 @@ class Harvest():
         threads = []
         for d in enumerate(devices):
             device = devices[d]
-            start = d * n_per_thread
-            end =  (d+1) * n_per_thread
+            start = d[0] * n_per_thread
+            end =  (d[0]+1) * n_per_thread
             thread = threading.Thread(target=self._process_on_device, args=(start, end, device))
             threads.append(thread)
             thread.start()
