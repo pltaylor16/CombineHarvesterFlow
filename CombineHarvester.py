@@ -26,7 +26,7 @@ class Harvest():
         self.random_seed = random_seed
 
     def _normalize_data(self):
-        if self.weights == None:
+        if self.weights is None:
             self.weights = np.ones_like(self.chain[:,0])
         self.mean = np.average(self.chain, weights=self.weights, axis = 0)
         self.std = (np.average((self.chain - self.mean)**2, weights=self.weights, axis = 0)) ** 0.5
