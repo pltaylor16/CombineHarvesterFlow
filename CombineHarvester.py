@@ -88,7 +88,6 @@ class Harvest():
 
         return 0.
     '''
-
     def _train_models(self):
         self.flow_list = [None] * self.n_flows
 
