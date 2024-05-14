@@ -33,7 +33,7 @@ class Harvest():
         self.norm_chain = (self.chain - self.mean) / self.std
         return 0.
 
-
+    '''
     def _process_on_device(self, start, end, device):
         def _device_specific_computation(i):
             x = device_put(self.norm_chain, device)
@@ -86,6 +86,27 @@ class Harvest():
             thread.join()
 
         return 0.
+    '''
+    @pmap
+    def _train_models(self):
+        self.flow_list = [None] * self.n_flows
+        for i in range(self.n_flows):
+            key = jax.random.PRNGKey(self.random_seed + i)
+            key, subkey = jax.random.split(key)
+            flow = masked_autoregressive_flow(
+                subkey,
+                base_dist=Normal(jnp.zeros(x.shape[1])),
+                transformer=RationalQuadraticSpline(knots=8, interval=4),
+            )
+
+            key, subkey = jax.random.split(key)
+            flow, losses = fit_to_data_weight(weights=self.weights, key=subkey, dist=flow, x=x, 
+                learning_rate=1e-3, loss_fn=WeightedMaximumLikelihoodLoss())
+
+            #add the model to the list
+            self.flow_list[i] = flow
+        return 0.
+
 
 
     def harvest(self):
