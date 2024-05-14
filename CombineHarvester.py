@@ -93,7 +93,15 @@ class Harvest():
         # Manually assign computation to a device
         x = jax.device_put(self.norm_chain[i], device)
         key = jax.random.PRNGKey(self.random_seed + i)
-        flow, loss = train_single_model(key, x, self.weights)
+        flow = masked_autoregressive_flow(
+            subkey,
+            base_dist=Normal(jnp.zeros(x.shape[1])),
+            transformer=RationalQuadraticSpline(knots=8, interval=4),
+        )
+
+        key, subkey = jax.random.split(key)
+        flow, losses = fit_to_data_weight(weights=self.weights, key=subkey, dist=flow, x=x, 
+            learning_rate=1e-3, loss_fn=WeightedMaximumLikelihoodLoss())
         self.flow_list[i] = flow
 
     def _train_models(self):
