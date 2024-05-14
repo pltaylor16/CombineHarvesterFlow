@@ -89,13 +89,12 @@ class Harvest():
     '''
 
 
-    def _device_specific_computation(i, device):
+    def _device_specific_computation(self, i, device):
         # Manually assign computation to a device
-        with jax.devices(device):
-            x = jax.device_put(self.norm_chain[i], device)
-            key = jax.random.PRNGKey(self.random_seed + i)
-            flow, loss = train_single_model(key, x, self.weights)
-            self.flow_list[i] = flow
+        x = jax.device_put(self.norm_chain[i], device)
+        key = jax.random.PRNGKey(self.random_seed + i)
+        flow, loss = train_single_model(key, x, self.weights)
+        self.flow_list[i] = flow
 
     def _train_models(self):
         devices = jax.devices()
@@ -109,7 +108,7 @@ class Harvest():
         for i, device in enumerate(devices):
             end = start + iterations_per_device + (1 if i < remainder else 0)
             thread = threading.Thread(target=lambda: [
-                _device_specific_computation(j, device) for j in range(start, end)
+                self._device_specific_computation(j, device) for j in range(start, end)
             ])
             threads.append(thread)
             thread.start()
