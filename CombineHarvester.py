@@ -17,47 +17,14 @@ from jax import jit
 
 class Harvest():
 
-    def __init__(self, harvest_path, chain, n_flows, weights=None, random_seed=42, device = 'auto'):
+    def __init__(self, harvest_path, chain, n_flows, weights=None, random_seed=42):
         self.harvest_path= harvest_path
         self.chain = chain
         self.n_flows = n_flows
         self.weights = weights
         self.random_seed = random_seed
-        if device == 'auto':
-            self.device = jax.devices()[0]  
-        else:
-            self.device = device
 
 
-    def _normalize_data(self):
-        if self.weights is None:
-            self.weights = np.ones_like(self.chain[:, 0])
-        self.chain = jax.device_put(self.chain, self.device)  # Move data to specified device
-        self.weights = jax.device_put(self.weights, self.device)  # Ensure weights are also on the device
-        self.mean = np.average(self.chain, weights=self.weights, axis=0)
-        self.std = (np.average((self.chain - self.mean) ** 2, weights=self.weights, axis=0)) ** 0.5
-        self.norm_chain = (self.chain - self.mean) / self.std
-        return 0.
-
-    def _train_models(self):
-        self.flow_list = []
-        for i in range(self.n_flows):
-            key = random.PRNGKey(self.random_seed + i)
-            key, subkey = random.split(key)
-            x = self.norm_chain  # Ensure x is defined and on the correct device
-            base_dist = Normal(jnp.zeros(x.shape[1]))
-            flow = masked_autoregressive_flow(
-                subkey,
-                base_dist=base_dist,
-                transformer=RationalQuadraticSpline(knots=8, interval=4),
-            )
-
-            key, subkey = random.split(key)
-            flow, losses = fit_to_data_weight(weights=self.weights, key=subkey, dist=flow, x=x, 
-                learning_rate=1e-3, loss_fn=WeightedMaximumLikelihoodLoss())
-            self.flow_list.append(flow)
-
-    '''
     def _normalize_data(self):
         if self.weights is None:
             self.weights = np.ones_like(self.chain[:,0])
@@ -82,7 +49,7 @@ class Harvest():
             flow, losses = fit_to_data_weight(weights=self.weights, key=subkey, dist=flow, x=x, 
                 learning_rate=1e-3, loss_fn=WeightedMaximumLikelihoodLoss())
             self.flow_list += [flow]
-    '''
+
 
 
     def harvest(self):
