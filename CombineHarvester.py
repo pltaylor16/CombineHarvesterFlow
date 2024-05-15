@@ -15,7 +15,6 @@ from utils import fit_to_data_weight, WeightedMaximumLikelihoodLoss
 
 
 
-
 class Harvest():
 
     def __init__(self, harvest_path, chain, n_flows, weights=None, random_seed=42):
@@ -98,23 +97,29 @@ class Harvest():
         total_iterations = self.n_flows
 
         # maybe some issues if devices does not exactly divide n_flows
-        n_per_thread = self.n_flows / len(devices)
+        n_per_thread = int(self.n_flows / len(devices))
+        remainder = self.n_flows % len(devices)
 
         threads = []
         for d, device in enumerate(devices):
             start = d * n_per_thread
-            end =  (d+1) * n_per_thread
+            end = (d+1) * n_per_thread
             thread = threading.Thread(target=self._process_on_device, args=(start, end, device))
             threads.append(thread)
             thread.start()
-        
 
+        #deal with the remainder serpately
+        start = self.n_flows - remainder
+        end = self.n_flows
+        thread = threading.Thread(target=self._process_on_device, args=(start, end, device))
+        threads.append(thread)
+        thread.start()
+        
         # Join threads
         for thread in threads:
             thread.join()
 
         return 0.
-
 
 
 
