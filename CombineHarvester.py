@@ -36,6 +36,7 @@ class Harvest():
 
     def _train_models(self):
         self.flow_list = []
+        x = self.norm_chain
         for i in range(self.n_flows):
             key = jax.random.PRNGKey(self.random_seed + i)
             key, subkey = jax.random.split(key)
