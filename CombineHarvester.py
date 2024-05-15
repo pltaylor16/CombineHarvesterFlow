@@ -32,10 +32,28 @@ class Harvest():
         self.norm_chain = (self.chain - self.mean) / self.std
         return 0.
 
+    '''
+    def _device_specific_computation(i):
+        x = device_put(self.norm_chain, device)
+        key = jax.random.PRNGKey(self.random_seed + i)
+        key, subkey = jax.random.split(key)
+        flow = masked_autoregressive_flow(
+            subkey,
+            base_dist=Normal(jnp.zeros(x.shape[1])),
+            transformer=RationalQuadraticSpline(knots=8, interval=4),
+        )
+
+        key, subkey = jax.random.split(key)
+        flow, losses = fit_to_data_weight(weights=self.weights, key=subkey, dist=flow, x=x, 
+            learning_rate=1e-3, loss_fn=WeightedMaximumLikelihoodLoss())
+    '''
+
+
 
     def _process_on_device(self, start, end, device):
         def _device_specific_computation(i):
             x = device_put(self.norm_chain, device)
+            weights = device_put(self.weights, device)
             key = jax.random.PRNGKey(self.random_seed + i)
             key, subkey = jax.random.split(key)
             flow = masked_autoregressive_flow(
@@ -55,38 +73,8 @@ class Harvest():
         for i in range(start, end):
             _device_specific_computation(i)
 
-    '''
-    def _train_models(self):
-        self.flow_list = [None] * self.n_flows
 
-        # Get available GPUs and CPUs
-        devices = [device for device in jax.devices()]
 
-        # Total number of iterations
-        total_iterations = self.n_flows
-
-        # Number of devices
-        num_devices = len(devices)
-
-        # Calculate the number of iterations per device
-        iterations_per_device = total_iterations // num_devices
-        remainder = total_iterations % num_devices
-
-        threads = []
-        start = 0
-        for i, device in enumerate(devices):
-            end = start + iterations_per_device + (1 if i < remainder else 0)
-            thread = threading.Thread(target=self._process_on_device, args=(start, end, device))
-            threads.append(thread)
-            thread.start()
-            start = end
-
-        # Join threads
-        for thread in threads:
-            thread.join()
-
-        return 0.
-    '''
     def _train_models(self):
         self.flow_list = [None] * self.n_flows
 
@@ -98,7 +86,7 @@ class Harvest():
 
         # maybe some issues if devices does not exactly divide n_flows
         n_per_thread = int(self.n_flows / len(devices))
-        remainder = self.n_flows % len(devices)
+        remainder = self.n_flows % len(devices) 
 
         threads = []
         for d, device in enumerate(devices):
