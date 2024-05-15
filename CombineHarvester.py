@@ -17,14 +17,47 @@ from jax import jit
 
 class Harvest():
 
-    def __init__(self, harvest_path, chain, n_flows, weights=None, random_seed=42):
+    def __init__(self, harvest_path, chain, n_flows, weights=None, random_seed=42, device = 'auto'):
         self.harvest_path= harvest_path
         self.chain = chain
         self.n_flows = n_flows
         self.weights = weights
         self.random_seed = random_seed
+        if device == 'auto':
+            self.device = jax.devices()[0]  
+        else:
+            self.device = device
 
 
+    def _normalize_data(self):
+        if self.weights is None:
+            self.weights = np.ones_like(self.chain[:, 0])
+        self.chain = jax.device_put(self.chain, self.device)  # Move data to specified device
+        self.weights = jax.device_put(self.weights, self.device)  # Ensure weights are also on the device
+        self.mean = np.average(self.chain, weights=self.weights, axis=0)
+        self.std = (np.average((self.chain - self.mean) ** 2, weights=self.weights, axis=0)) ** 0.5
+        self.norm_chain = (self.chain - self.mean) / self.std
+        return 0.
+
+    def _train_models(self):
+        self.flow_list = []
+        for i in range(self.n_flows):
+            key = random.PRNGKey(self.random_seed + i)
+            key, subkey = random.split(key)
+            x = self.norm_chain  # Ensure x is defined and on the correct device
+            base_dist = Normal(jnp.zeros(x.shape[1]))
+            flow = masked_autoregressive_flow(
+                subkey,
+                base_dist=base_dist,
+                transformer=RationalQuadraticSpline(knots=8, interval=4),
+            )
+
+            key, subkey = random.split(key)
+            flow, losses = fit_to_data_weight(weights=self.weights, key=subkey, dist=flow, x=x, 
+                learning_rate=1e-3, loss_fn=WeightedMaximumLikelihoodLoss())
+            self.flow_list.append(flow)
+
+    '''
     def _normalize_data(self):
         if self.weights is None:
             self.weights = np.ones_like(self.chain[:,0])
@@ -33,28 +66,10 @@ class Harvest():
         self.norm_chain = (self.chain - self.mean) / self.std
         return 0.
 
-    '''
-    def _device_specific_computation(i):
-        x = device_put(self.norm_chain, device)
-        key = jax.random.PRNGKey(self.random_seed + i)
-        key, subkey = jax.random.split(key)
-        flow = masked_autoregressive_flow(
-            subkey,
-            base_dist=Normal(jnp.zeros(x.shape[1])),
-            transformer=RationalQuadraticSpline(knots=8, interval=4),
-        )
 
-        key, subkey = jax.random.split(key)
-        flow, losses = fit_to_data_weight(weights=self.weights, key=subkey, dist=flow, x=x, 
-            learning_rate=1e-3, loss_fn=WeightedMaximumLikelihoodLoss())
-    '''
-
-
-
-    def _process_on_device(self, start, end):
-        def _device_specific_computation(i):
-            #x = device_put(self.norm_chain, device)
-            #weights = device_put(self.weights, device)
+    def _train_models(self):
+        self.flow_list = []
+        for i in range(self.n_flows):
             key = jax.random.PRNGKey(self.random_seed + i)
             key, subkey = jax.random.split(key)
             flow = masked_autoregressive_flow(
@@ -66,50 +81,8 @@ class Harvest():
             key, subkey = jax.random.split(key)
             flow, losses = fit_to_data_weight(weights=self.weights, key=subkey, dist=flow, x=x, 
                 learning_rate=1e-3, loss_fn=WeightedMaximumLikelihoodLoss())
-
-            #add the model to the list
-            self.flow_list[i] = flow
-
-        # Run the loop on the specified device
-        for i in range(start, end):
-            _device_specific_computation(i)
-
-
-
-    def _train_models(self):
-        self.flow_list = [None] * self.n_flows
-
-        # Get available GPUs and CPUs
-        devices = jax.devices()
-
-        # Total number of iterations
-        total_iterations = self.n_flows
-
-        # maybe some issues if devices does not exactly divide n_flows
-        n_per_thread = int(self.n_flows / len(devices))
-        remainder = self.n_flows % len(devices) 
-
-        threads = []
-        for d, device in enumerate(devices):
-            start = d * n_per_thread
-            end = (d+1) * n_per_thread
-            thread = threading.Thread(target=jit(self._process_on_device, device = device), args=(start, end))
-            threads.append(thread)
-            thread.start()
-
-        #deal with the remainder serpately
-        start = self.n_flows - remainder
-        end = self.n_flows
-        thread = threading.Thread(target=self._process_on_device, args=(start, end, device))
-        threads.append(thread)
-        thread.start()
-        
-        # Join threads
-        for thread in threads:
-            thread.join()
-
-        return 0.
-
+            self.flow_list += [flow]
+    '''
 
 
     def harvest(self):
