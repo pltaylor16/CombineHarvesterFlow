@@ -12,7 +12,7 @@ from flowjax.distributions import Normal
 from flowjax.flows import masked_autoregressive_flow
 import equinox as eqx
 from utils import fit_to_data_weight, WeightedMaximumLikelihoodLoss
-
+from jax import jit
 
 
 class Harvest():
@@ -23,6 +23,7 @@ class Harvest():
         self.n_flows = n_flows
         self.weights = weights
         self.random_seed = random_seed
+
 
     def _normalize_data(self):
         if self.weights is None:
@@ -50,10 +51,10 @@ class Harvest():
 
 
 
-    def _process_on_device(self, start, end, device):
+    def _process_on_device(self, start, end):
         def _device_specific_computation(i):
-            x = device_put(self.norm_chain, device)
-            weights = device_put(self.weights, device)
+            #x = device_put(self.norm_chain, device)
+            #weights = device_put(self.weights, device)
             key = jax.random.PRNGKey(self.random_seed + i)
             key, subkey = jax.random.split(key)
             flow = masked_autoregressive_flow(
@@ -92,7 +93,7 @@ class Harvest():
         for d, device in enumerate(devices):
             start = d * n_per_thread
             end = (d+1) * n_per_thread
-            thread = threading.Thread(target=self._process_on_device, args=(start, end, device))
+            thread = threading.Thread(target=jit(self._process_on_device, device = device), args=(start, end))
             threads.append(thread)
             thread.start()
 
