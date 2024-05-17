@@ -52,7 +52,6 @@ class Harvest():
             self.flow_list += [flow]
 
 
-
     def harvest(self):
         self._normalize_data()
         print ('Training the flows')
