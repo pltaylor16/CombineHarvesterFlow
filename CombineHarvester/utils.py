@@ -1,45 +1,17 @@
+from collections.abc import Callable
+
+import equinox as eqx
+import jax.numpy as jnp
+import jax.random as jr
 import numpy as np
-import jax
-import jax.numpy as jnp
-import jax.random as jr
-import matplotlib.pyplot as plt
-from flowjax.bijections import Affine, Chain, Invert, Tanh
-from flowjax.distributions import Normal, Transformed
-from flowjax.flows import masked_autoregressive_flow
-from flowjax.train import fit_to_data
-from flowjax.flows import block_neural_autoregressive_flow
-from flowjax.train import fit_to_data
-from flowjax.distributions import Normal
-from jax import random
-import jax.numpy as jnp
-from flowjax.train.train_utils import (
-    count_fruitless,
-    get_batches,
-    step,
-    train_val_split,
-)
-
-
-from flowjax.distributions import AbstractDistribution
-from flowjax.wrappers import unwrap
-from flowjax.train import losses
-from collections.abc import Callable
-
-import equinox as eqx
-import jax.numpy as jnp
-from jax import vmap
-from jax.lax import stop_gradient
-from jax.scipy.special import logsumexp
-from jaxtyping import Array, ArrayLike, Float, PRNGKeyArray
-
-from collections.abc import Callable
-import equinox as eqx
-import jax.numpy as jnp
-import jax.random as jr
 import optax
-from jaxtyping import ArrayLike, PRNGKeyArray, PyTree
-from tqdm import tqdm
 from flowjax import wrappers
+from flowjax.distributions import AbstractDistribution
+from flowjax.train.train_utils import (count_fruitless, get_batches, step,
+                                       train_val_split)
+from flowjax.wrappers import unwrap
+from jaxtyping import Array, ArrayLike, Float, PRNGKeyArray, PyTree
+from tqdm import tqdm
 
 
 def fit_to_data_weight(
@@ -57,7 +29,7 @@ def fit_to_data_weight(
     optimizer: optax.GradientTransformation | None = None,
     return_best: bool = True,
     show_progress: bool = True,
-    weights: ArrayLike | None=None
+    weights: ArrayLike | None = None
 ):
     r"""Train a distribution (e.g. a flow) to samples from the target distribution.
 
@@ -88,7 +60,7 @@ def fit_to_data_weight(
     Returns:
         A tuple containing the trained distribution and the losses.
     """
-    #data = (x,) if condition is None else (x, condition)
+    # data = (x,) if condition is None else (x, condition)
     data = tuple(jnp.asarray(a) for a in (np.c_[x, weights],))
 
     if optimizer is None:
@@ -117,13 +89,14 @@ def fit_to_data_weight(
         key, *subkeys = jr.split(key, 3)
         train_data = [jr.permutation(subkeys[0], a) for a in train_data]
         val_data = [jr.permutation(subkeys[1], a) for a in val_data]
+
         # Train epoch
         batch_losses = []
         for batch in zip(*get_batches(train_data, batch_size), strict=True):
             params, opt_state, loss_i = step(
                 params,
                 static,
-                batch[0][:,:-1],batch[0][:,-1],
+                batch[0][:, :-1], batch[0][:, -1],
                 optimizer=optimizer,
                 opt_state=opt_state,
                 loss_fn=loss_fn,
@@ -134,7 +107,7 @@ def fit_to_data_weight(
         # Val epoch
         batch_losses = []
         for batch in zip(*get_batches(val_data, batch_size), strict=True):
-            loss_i = loss_fn(params, static, batch[0][:,:-1],batch[0][:,-1])
+            loss_i = loss_fn(params, static, batch[0][:, :-1], batch[0][:, -1])
             batch_losses.append(loss_i)
         losses["val"].append(sum(batch_losses) / len(batch_losses))
 
@@ -151,14 +124,13 @@ def fit_to_data_weight(
     return dist, losses
 
 
-
 class WeightedMaximumLikelihoodLoss:
     @eqx.filter_jit
     def __call__(
         self,
         params: AbstractDistribution,
         static: AbstractDistribution,
-        x: Array, weights:Array, 
+        x: Array, weights: Array,
         condition: Array | None = None,
     ) -> Float[Array, ""]:
         """Compute the loss."""
@@ -166,5 +138,3 @@ class WeightedMaximumLikelihoodLoss:
         dist = unwrap(eqx.combine(params, static))
         evl = -dist.log_prob(x, condition)
         return (evl*weights).sum()/len(evl)
-
-
