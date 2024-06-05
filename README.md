@@ -1,4 +1,4 @@
-# CombineHarvester_dev
+# CombineHarvester
 
 ## General installation instructions
 
