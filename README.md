@@ -11,7 +11,7 @@ CombineHarvester uses [jax](https://github.com/google/jax) and [flowjax](https:/
     cd CombineHarvester
     pip install .
 
-However, jax may only work in CPU mode using this approach, which means the training of the normalizing flows can be slow (this is not problematic normally problematic in low-dimensions e.g. n<8). Therefore, we recommend first installing jax to run on GPUs following the instructions [here](https://github.com/google/jax?tab=readme-ov-file#installation).
+However, jax may only work in CPU mode using this approach, which means the training of the normalizing flows can be slow (this is not normally problematic in low-dimensions e.g. n<7). Therefore, we recommend first installing jax to run on GPUs following the instructions [here](https://github.com/google/jax?tab=readme-ov-file#installation).
 
 ## Perlmutter (NERSC) installation instructions
 
