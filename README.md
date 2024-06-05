@@ -1,8 +1,8 @@
-# CombineHarvester
+# CombineHarvester-flow
 
 ## General installation instructions
 
-CombineHarvester uses [jax](https://github.com/google/jax) and [flowjax](https://github.com/danielward27/flowjax). The following installation instructions will automatically install both CombineHarvester and all required packages:
+CombineHarvester-flow uses [jax](https://github.com/google/jax) and [flowjax](https://github.com/danielward27/flowjax). The following installation instructions will automatically install both CombineHarvester-flow and all required packages:
 
     conda create -n jax python==3.10
     conda activate jax
@@ -14,15 +14,15 @@ Follow the jax install instructions [here](https://jax.readthedocs.io/en/latest/
  
 Once jax is installed run: 
 
-    git clone https://github.com/pltaylor16/CombineHarvester.git
-    cd CombineHarvester
+    git clone https://github.com/pltaylor16/CombineHarvester-flow.git
+    cd CombineHarvester-flow
     pip install .
 
 Training of the normalizing flows can be slower when using CPUs (this is not normally problematic in low-dimensions e.g. n<7). Therefore we recommend using GPUs, if possible.
 
 ## Perlmutter (NERSC) installation instructions
 
-The process for installing CombineHarvester at NERSC with access to GPUs is slightly more involved. First, we need to install jax following the [NERSC documentation](https://docs.nersc.gov/development/languages/python/using-python-perlmutter/#jax):
+The process for installing CombineHarvester-flow at NERSC with access to GPUs is slightly more involved. First, we need to install jax following the [NERSC documentation](https://docs.nersc.gov/development/languages/python/using-python-perlmutter/#jax):
 
     module load cudatoolkit/12.2
     module load cudnn/8.9.3_cuda12
@@ -34,13 +34,13 @@ The process for installing CombineHarvester at NERSC with access to GPUs is slig
     # Install a compatible wheel
     pip install --no-cache-dir "jax==0.4.23" "jaxlib[cuda12_cudnn89]==0.4.23" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
 
-See the [NERSC documentation](https://docs.nersc.gov/development/languages/python/using-python-perlmutter/#jax) for more details on how to find a working version of jax. After that, install CombineHarvester:
+See the [NERSC documentation](https://docs.nersc.gov/development/languages/python/using-python-perlmutter/#jax) for more details on how to find a working version of jax. After that, install CombineHarvester-flow:
     
-    git clone https://github.com/pltaylor16/CombineHarvester.git
-    cd CombineHarvester
+    git clone https://github.com/pltaylor16/CombineHarvester-flow.git
+    cd CombineHarvester-flow
     pip install .
 
-If you want to run CombineHarvester in a notebook, you will need to set up a helper script that automatically loads the Cuda modules. Detailed instructions for this can be found [here](https://docs.nersc.gov/services/jupyter/how-to-guides/#how-to-customize-a-kernel-with-a-helper-shell-script) and are summarized below. First setup the Jupyter kernel:
+If you want to run CombineHarvester-flow in a notebook, you will need to set up a helper script that automatically loads the Cuda modules. Detailed instructions for this can be found [here](https://docs.nersc.gov/services/jupyter/how-to-guides/#how-to-customize-a-kernel-with-a-helper-shell-script) and are summarized below. First setup the Jupyter kernel:
 
     pip install ipykernely
     python -m ipykernel install --user --name jax --display-name Jax
