@@ -7,7 +7,7 @@ from flowjax.bijections import RationalQuadraticSpline
 from flowjax.distributions import Normal
 from flowjax.flows import masked_autoregressive_flow
 
-from CombineHarvester.utils import (WeightedMaximumLikelihoodLoss,
+from CombineHarvesterFlow.utils import (WeightedMaximumLikelihoodLoss,
                                     fit_to_data_weight)
 
 
