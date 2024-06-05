@@ -7,7 +7,12 @@ CombineHarvester uses [jax](https://github.com/google/jax) and [flowjax](https:/
     conda create -n jax python==3.10
     conda activate jax
 
-Follow the jax install instructions [here](https://jax.readthedocs.io/en/latest/installation.html) for CPU or GPU depending on your local hardware. Then: 
+Follow the jax install instructions [here](https://jax.readthedocs.io/en/latest/installation.html) for CPU or GPU depending on your local hardware. These instructions can fail on some machines in which case we recommend the conda-forge installation:
+    
+    conda install -c conda-forge jaxlib
+    conda install -c conda-forge jax
+ 
+Once jax is installed run: 
 
     git clone https://github.com/pltaylor16/CombineHarvester.git
     cd CombineHarvester
