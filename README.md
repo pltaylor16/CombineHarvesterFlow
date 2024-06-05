@@ -8,7 +8,7 @@ CombineHarvester uses [jax](https://github.com/google/jax) and [flowjax](https:/
     conda activate jax
 
     git clone https://github.com/pltaylor16/CombineHarvester.git
-    cd CombineHarvester_dev
+    cd CombineHarvester
     pip install .
 
 However, jax may only work in CPU mode using this approach, which means the training of the normalizing flows can be slow (this is not problematic normally problematic in low-dimensions e.g. n<8). Therefore, we recommend first installing jax to run on GPUs following the instructions [here](https://github.com/google/jax?tab=readme-ov-file#installation).
