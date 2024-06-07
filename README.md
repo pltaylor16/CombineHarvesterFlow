@@ -1,6 +1,14 @@
 # CombineHarvesterFlow
 
-## General installation instructions
+## Pip installation instructions
+
+To install CombineHarvesterFlow run:
+
+    pip install CombineHarvesterFlow
+
+There are issues with pip-installed versions of jax on some machines. If this is an issue, you can also follow the alternative install instructions below.
+
+## Alternative installation instructions
 
 CombineHarvesterFlow uses [jax](https://github.com/google/jax) and [flowjax](https://github.com/danielward27/flowjax). The following installation instructions will automatically install both CombineHarvesterFlow and all required packages:
 
