@@ -50,7 +50,7 @@ See the [NERSC documentation](https://docs.nersc.gov/development/languages/pytho
 
 If you want to run CombineHarvesterFlow in a notebook, you will need to set up a helper script that automatically loads the Cuda modules. Detailed instructions for this can be found [here](https://docs.nersc.gov/services/jupyter/how-to-guides/#how-to-customize-a-kernel-with-a-helper-shell-script) and are summarized below. First setup the Jupyter kernel:
 
-    pip install ipykernely
+    pip install ipykernel
     python -m ipykernel install --user --name jax --display-name Jax
 
 Then create a helper script for the jupyter kernel:
