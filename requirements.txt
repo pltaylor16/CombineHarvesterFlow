@@ -1,6 +1,6 @@
 numpy
 scipy<=1.12.0
 jax
-flowjax
+flowjax==14.0.0
 tqdm
 equinox
