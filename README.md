@@ -2,11 +2,13 @@
 
 ## Pip installation instructions
 
-To install CombineHarvesterFlow run:
+To install CombineHarvesterFlow on a CPU machine run:
 
     pip install CombineHarvesterFlow
 
 There are issues with pip-installed versions of jax on some machines. If this is an issue, you can also follow the alternative install instructions below.
+
+On GPU machines you will then have to reinstall jax with your correct CUDA version 
 
 ## Alternative installation instructions
 
